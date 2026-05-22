@@ -5,6 +5,7 @@ export const users = pgTable("users", {
   id: text("id").primaryKey(), // Clerk User ID
   email: text("email").notNull().unique(),
   name: text("name"),
+  role: text("role").default("user").notNull(), // 'user' ou 'admin'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

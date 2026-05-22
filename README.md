@@ -13,7 +13,7 @@
 
 **CosmosDaily** é uma plataforma SaaS completa que transforma dados científicos da NASA em uma experiência visual imersiva e interativa, com autenticação, planos de assinatura e infraestrutura cloud segura.
 
-[🚀 Ver Demo ao Vivo](http://100.53.106.125) · [📋 Reportar Bug](https://github.com/pauloneto98/CosmosToday/issues)
+[🚀 Ver Demo ao Vivo](http://34.205.75.41) · [📋 Reportar Bug](https://github.com/pauloneto98/CosmosToday/issues)
 
 </div>
 

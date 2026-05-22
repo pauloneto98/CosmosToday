@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getUpcomingLaunches, mockLaunches, formatCountdown, getStatusColor, type Launch } from "@/lib/external/launch-library";
+import { mockLaunches, formatCountdown, getStatusColor, type Launch } from "@/lib/external/launch-library";
 import { Rocket, Clock, Play, ExternalLink } from "lucide-react";
 
 function Countdown({ targetDate }: { targetDate: string }) {
@@ -41,8 +41,10 @@ export function LaunchesWidget() {
   const fetchLaunches = async () => {
     setLoading(true);
     try {
-      const data = await getUpcomingLaunches(5);
-      setLaunches(data);
+      const res = await fetch("/api/nasa/launches");
+      if (!res.ok) throw new Error("API error");
+      const data: Launch[] = await res.json();
+      setLaunches(data.slice(0, 5));
       setUseMock(false);
     } catch {
       setLaunches(mockLaunches);

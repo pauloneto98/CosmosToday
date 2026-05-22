@@ -1,4 +1,5 @@
 const LAUNCH_LIB_BASE = "https://ll.thespacedevs.com/2.3.0";
+const SPACEX_API_BASE = "https://api.spacexdata.com/v4";
 
 export interface Launch {
   id: string;
@@ -37,27 +38,96 @@ export interface Launch {
 }
 
 export async function getUpcomingLaunches(limit: number = 10): Promise<Launch[]> {
-  const response = await fetch(`${LAUNCH_LIB_BASE}/launch/upcoming/?limit=${limit}`, {
+  // Try The Space Devs first with User-Agent header
+  try {
+    const response = await fetch(`${LAUNCH_LIB_BASE}/launch/upcoming/?limit=${limit}`, {
+      headers: {
+        "User-Agent": "CosmosDaily/1.0",
+        "Accept": "application/json",
+      },
+      next: { revalidate: 15 * 60 },
+    });
+
+    if (response.status === 429) {
+      throw new Error("Rate limited by The Space Devs API");
+    }
+
+    if (!response.ok) {
+      throw new Error(`Launch Library API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.results;
+  } catch (err) {
+    console.warn("The Space Devs API failed, falling back to SpaceX API:", err);
+    return getSpaceXUpcomingLaunches(limit);
+  }
+}
+
+async function getSpaceXUpcomingLaunches(limit: number): Promise<Launch[]> {
+  const response = await fetch(`${SPACEX_API_BASE}/launches/upcoming`, {
+    headers: {
+      "User-Agent": "CosmosDaily/1.0",
+    },
     next: { revalidate: 15 * 60 },
   });
-  
+
   if (!response.ok) {
-    throw new Error(`Launch Library API error: ${response.statusText}`);
+    throw new Error(`SpaceX API error: ${response.status} ${response.statusText}`);
   }
-  
-  const data = await response.json();
-  return data.results;
+
+  const launches: Record<string, unknown>[] = await response.json();
+
+  return launches.slice(0, limit).map((launch) => {
+    const links = launch.links as Record<string, unknown> | undefined;
+    const patch = links?.patch as Record<string, string> | undefined;
+
+    return {
+      id: String(launch.id || ""),
+      name: String(launch.name || "Unknown Launch"),
+      status: {
+        id: 1,
+        name: launch.upcoming ? "Go for Launch" : "TBD",
+        abbrev: launch.upcoming ? "GO" : "TBD",
+        description: "",
+      },
+      window_start: String(launch.date_utc || new Date().toISOString()),
+      window_end: String(launch.date_utc || new Date().toISOString()),
+      mission: {
+        id: 0,
+        name: String(launch.details || launch.name || "Unknown"),
+        description: String(launch.details || ""),
+        type: "Unknown",
+      },
+      rocket: {
+        id: 0,
+        name: "Falcon 9",
+        configuration: { name: "Falcon 9" },
+      },
+      pad: {
+        id: 0,
+        name: String(launch.launchpad || ""),
+        location: { name: "Cape Canaveral", country_code: "US" },
+      },
+      image: patch?.small || null,
+      webcast_live: links?.webcast ? true : false,
+    } as Launch;
+  });
 }
 
 export async function getLaunchById(id: string): Promise<Launch> {
   const response = await fetch(`${LAUNCH_LIB_BASE}/launch/${id}/`, {
+    headers: {
+      "User-Agent": "CosmosDaily/1.0",
+      "Accept": "application/json",
+    },
     next: { revalidate: 60 },
   });
-  
+
   if (!response.ok) {
     throw new Error(`Launch Library API error: ${response.statusText}`);
   }
-  
+
   return response.json();
 }
 
@@ -78,11 +148,11 @@ export function formatCountdown(dateStr: string): { days: number; hours: number;
   const target = new Date(dateStr);
   const now = new Date();
   const diff = Math.max(0, target.getTime() - now.getTime());
-  
+
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   return { days, hours, minutes };
 }
 

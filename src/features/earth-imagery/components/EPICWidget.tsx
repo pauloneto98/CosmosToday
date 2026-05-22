@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getEPICImages, mockEPICImages, getEPICImageUrl, type EPICImage } from "@/lib/nasa/epic";
+import { mockEPICImages, getEPICImageUrl, type EPICImage } from "@/lib/nasa/epic";
 import { Globe, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function EPICWidget() {
@@ -23,7 +23,9 @@ export function EPICWidget() {
   const fetchImages = async () => {
     setLoading(true);
     try {
-      const data = await getEPICImages();
+      const res = await fetch("/api/nasa/epic");
+      if (!res.ok) throw new Error("API error");
+      const data: EPICImage[] = await res.json();
       setImages(data.slice(0, 6));
       setUseMock(false);
     } catch {

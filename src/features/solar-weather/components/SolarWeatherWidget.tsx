@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getSolarEvents, mockSolarEvents, getEventTypeLabel, getEventTypeColor, type SolarEvent } from "@/lib/nasa/donki";
+import { mockSolarEvents, getEventTypeLabel, getEventTypeColor, type SolarEvent } from "@/lib/nasa/donki";
 import { Sun, Activity, ExternalLink } from "lucide-react";
 
 export function SolarWeatherWidget() {
@@ -21,17 +21,13 @@ export function SolarWeatherWidget() {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const today = new Date();
-      const in30Days = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
-      const data = await getSolarEvents(
-        in30Days.toISOString().split("T")[0],
-        today.toISOString().split("T")[0]
-      );
-      
+      const res = await fetch("/api/nasa/solar");
+      if (!res.ok) throw new Error("API error");
+      const data: { events: SolarEvent[] } = await res.json();
+
       setEvents(data.events.slice(0, 8));
       setUseMock(false);
-      
+
       if (data.events.some(e => e.type === "GST")) {
         setLevel("storm");
       } else if (data.events.some(e => e.type === "CME")) {

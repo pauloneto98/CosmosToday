@@ -81,8 +81,12 @@ export default function Home() {
           <span className="text-[var(--color-text)]">Daily</span>
         </motion.div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm">Entrar</Button>
-          <Button variant="primary" size="sm">Começar grátis</Button>
+          <Link href="/sign-in">
+            <Button variant="ghost" size="sm">Entrar</Button>
+          </Link>
+          <Link href="/sign-up">
+            <Button variant="primary" size="sm">Começar grátis</Button>
+          </Link>
         </div>
       </nav>
 
@@ -110,11 +114,15 @@ export default function Home() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex flex-wrap gap-4">
-              <Button size="lg" shimmer>
-                Começar grátis
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="lg">Ver demo</Button>
+              <Link href="/sign-up">
+                <Button size="lg" shimmer>
+                  Começar grátis
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+              <Link href="/dashboard">
+                <Button variant="ghost" size="lg">Ver demo</Button>
+              </Link>
             </motion.div>
 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="flex items-center gap-4">
@@ -210,7 +218,9 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Button variant={plan.variant} className="w-full">Assinar</Button>
+                  <Link href="/sign-up" className="w-full">
+                    <Button variant={plan.variant} className="w-full">Assinar</Button>
+                  </Link>
                 </Card>
               </motion.div>
             ))}

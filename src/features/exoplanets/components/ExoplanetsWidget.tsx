@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getExoplanets, mockExoplanets, formatExoplanetSize, formatExoplanetTemp, getHabitabilityClass, type Exoplanet } from "@/lib/nasa/exoplanets";
+import { mockExoplanets, formatExoplanetSize, formatExoplanetTemp, getHabitabilityClass, type Exoplanet, type ExoplanetResponse } from "@/lib/nasa/exoplanets";
 import { Star, Thermometer, Ruler, Calendar } from "lucide-react";
 
 export function ExoplanetsWidget() {
@@ -20,7 +20,9 @@ export function ExoplanetsWidget() {
   const fetchExoplanets = async () => {
     setLoading(true);
     try {
-      const data = await getExoplanets(10);
+      const res = await fetch("/api/nasa/exoplanets");
+      if (!res.ok) throw new Error("API error");
+      const data: ExoplanetResponse = await res.json();
       const parsed = data.data.map(row => {
         const obj: Record<string, string | number | null> = {};
         data.fields.forEach((field, i) => {

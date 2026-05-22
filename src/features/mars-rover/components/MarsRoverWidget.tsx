@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getLatestMarsPhotos, mockMarsPhotos, roverInfo, type RoverName, type MarsPhoto } from "@/lib/nasa/mars-rover";
+import { mockMarsPhotos, roverInfo, type RoverName, type MarsPhoto, type MarsRoverResponse } from "@/lib/nasa/mars-rover";
 import { Moon, Camera, RefreshCw } from "lucide-react";
 
 export function MarsRoverWidget() {
@@ -22,7 +22,9 @@ export function MarsRoverWidget() {
   const fetchPhotos = async () => {
     setLoading(true);
     try {
-      const data = await getLatestMarsPhotos(selectedRover);
+      const res = await fetch(`/api/nasa/mars?rover=${selectedRover}&sol=1000`);
+      if (!res.ok) throw new Error("API error");
+      const data: MarsRoverResponse = await res.json();
       setPhotos(data.photos.slice(0, 6));
       setUseMock(false);
     } catch {

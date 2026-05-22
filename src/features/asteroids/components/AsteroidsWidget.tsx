@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getAsteroids, mockAsteroids, formatDistance, formatVelocity, type Asteroid } from "@/lib/nasa/neows";
+import { formatDistance, formatVelocity, mockAsteroids, type Asteroid } from "@/lib/nasa/neows";
 import { AlertTriangle, Orbit, TrendingUp } from "lucide-react";
 
 export function AsteroidsWidget() {
@@ -20,15 +20,10 @@ export function AsteroidsWidget() {
   const fetchAsteroids = async () => {
     setLoading(true);
     try {
-      const today = new Date();
-      const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      const data = await getAsteroids(
-        today.toISOString().split("T")[0],
-        in7Days.toISOString().split("T")[0]
-      );
-      
-      const allAsteroids = Object.values(data.near_earth_objects).flat();
+      const res = await fetch("/api/nasa/asteroids");
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      const allAsteroids: Asteroid[] = Object.values(data.near_earth_objects).flat() as Asteroid[];
       setAsteroids(allAsteroids.slice(0, 10));
       setUseMock(false);
     } catch {

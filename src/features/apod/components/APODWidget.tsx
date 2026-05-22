@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getAPOD, mockAPOD, type APOD } from "@/lib/nasa/apod";
+import { mockAPOD, type APOD } from "@/lib/nasa/apod";
 import { Calendar, Share2, Download, ExternalLink, Play } from "lucide-react";
 
 export function APODWidget() {
@@ -26,13 +26,15 @@ export function APODWidget() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAPOD();
+      const res = await fetch("/api/nasa/apod");
+      if (!res.ok) throw new Error("API error");
+      const data: APOD = await res.json();
       setApod(data);
       setUseMock(false);
     } catch (err) {
       setApod(mockAPOD);
-      setUseMock(true);
       setError("Usando dados de demonstração");
+      setUseMock(true);
     } finally {
       setLoading(false);
     }

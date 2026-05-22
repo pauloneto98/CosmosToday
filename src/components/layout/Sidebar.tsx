@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/app-store";
 import { 
@@ -11,11 +12,13 @@ import {
   Sun, 
   Newspaper, 
   Settings,
+  Shield,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { syncAndGetUser } from "@/app/actions/user";
 
 const navItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard" },
@@ -31,6 +34,15 @@ const navItems = [
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useAppStore();
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    syncAndGetUser().then((res) => {
+      if (res.success && res.user?.role === "admin") {
+        setIsAdmin(true);
+      }
+    });
+  }, []);
 
   return (
     <motion.aside
@@ -65,7 +77,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -95,6 +107,33 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Link do Admin condicional */}
+          {isAdmin && (
+            <Link
+              href="/dashboard/admin"
+              className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors border border-amber-500/20 bg-amber-500/5
+                ${pathname === "/dashboard/admin" 
+                  ? "bg-amber-500/20 text-amber-400" 
+                  : "text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-400"}
+              `}
+            >
+              <Shield className="w-5 h-5 flex-shrink-0" />
+              <AnimatePresence mode="wait">
+                {sidebarOpen && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-sm font-medium whitespace-nowrap"
+                  >
+                    Admin Panel
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Link>
+          )}
         </nav>
 
         <div className="p-4 border-t border-white/5">
