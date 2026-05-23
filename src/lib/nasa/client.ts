@@ -47,16 +47,34 @@ export class NASAClient {
       url.searchParams.set(key, value);
     });
 
-    const response = await fetch(url.toString(), {
-      next: { revalidate: options.cacheTime || 3600 },
-    });
-
-    if (!response.ok) {
-      const error: NASAError = await response.json();
-      throw new Error(`NASA API Error: ${error.msg || response.statusText}`);
+    // Apenas aplica caching no servidor (Next.js server-side) para evitar crashes no cliente
+    const fetchOptions: RequestInit & { next?: { revalidate: number } } = {};
+    if (typeof window === "undefined") {
+      fetchOptions.next = { revalidate: options.cacheTime || 3600 };
     }
 
-    const data = await response.json();
+    const response = await fetch(url.toString(), fetchOptions);
+
+    if (!response.ok) {
+      let errMsg = response.statusText;
+      try {
+        const text = await response.text();
+        const errorData = JSON.parse(text);
+        errMsg = errorData.msg || errorData.error?.message || errorData.error || response.statusText;
+      } catch (_) {
+        // Fallback para statusText se não for JSON
+      }
+      throw new Error(`NASA API Error: ${errMsg}`);
+    }
+
+    const textResponse = await response.text();
+    let data: any;
+    try {
+      data = JSON.parse(textResponse);
+    } catch (parseErr) {
+      throw new Error(`NASA API Response Parse Error: O servidor retornou um formato inválido.`);
+    }
+
     if (options.cacheTime) {
       this.setCache(cacheKey, data, options.cacheTime);
     }
