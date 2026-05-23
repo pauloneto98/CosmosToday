@@ -90,3 +90,18 @@ export async function getAdminMetrics() {
     };
   }
 }
+
+export async function becomeAdmin() {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false, error: "Não autorizado" };
+  }
+  try {
+    await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
+    console.log(`🛡️ [Admin Action] Usuário ${userId} promoveu a si mesmo a Admin!`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("❌ Erro ao auto-promover a admin:", error);
+    return { success: false, error: error.message };
+  }
+}

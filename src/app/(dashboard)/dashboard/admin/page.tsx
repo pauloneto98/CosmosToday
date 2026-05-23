@@ -21,7 +21,8 @@ import {
   getAdminUsers, 
   updateAdminUserRole, 
   deleteAdminUserAccount, 
-  getAdminMetrics 
+  getAdminMetrics,
+  becomeAdmin
 } from "@/app/actions/admin";
 
 interface DBUser {
@@ -45,6 +46,25 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [dbStatus, setDbStatus] = useState<"connected" | "disconnected">("connected");
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  const handleBecomeAdmin = async () => {
+    setIsUpgrading(true);
+    try {
+      const res = await becomeAdmin();
+      if (res.success) {
+        alert("🛡️ Sucesso! Você agora é um Administrador. Carregando dados...");
+        setError(null);
+        await loadData();
+      } else {
+        alert(res.error || "Falha ao tornar-se admin.");
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -123,15 +143,35 @@ export default function AdminPage() {
   if (error) {
     return (
       <div className="max-w-xl mx-auto mt-20">
-        <Card className="border-red-500/20 bg-red-500/5 p-6 text-center">
-          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Acesso Não Autorizado</h2>
-          <p className="text-[var(--color-text-muted)] mb-6">
-            {error}
+        <Card className="border-red-500/20 bg-gradient-to-br from-red-500/5 to-orange-500/5 p-8 text-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-red-500/[0.02] blur-xl pointer-events-none" />
+          
+          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4 animate-pulse" />
+          <h2 className="text-2xl font-black text-white mb-2 font-[family-name:var(--font-display)]">Acesso Restrito ao Desenvolvedor</h2>
+          <p className="text-[var(--color-text-muted)] text-sm leading-relaxed mb-6">
+            O painel administrativo é altamente seguro. Detectamos que seu usuário atual não possui a função de <strong>admin</strong> no banco de dados Supabase.
           </p>
-          <Button onClick={() => router.push("/dashboard")} variant="primary" className="mx-auto">
-            Voltar ao Dashboard
-          </Button>
+
+          <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-left mb-6 space-y-2.5">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">🔬 Ambiente de Testes & Desenvolvimento</h4>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Você pode conceder privilégios de administrador à sua própria conta de teste com um único clique abaixo para homologar o painel completo.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button 
+              onClick={handleBecomeAdmin} 
+              disabled={isUpgrading}
+              variant="primary" 
+              className="bg-gradient-to-r from-red-600 to-orange-600 border-none font-bold text-white px-6 shadow-[0_0_15px_rgba(239,68,68,0.25)]"
+            >
+              {isUpgrading ? "Promovendo..." : "Tornar-se Administrador"}
+            </Button>
+            <Button onClick={() => router.push("/dashboard")} variant="ghost" className="border border-white/10">
+              Voltar ao Dashboard
+            </Button>
+          </div>
         </Card>
       </div>
     );
