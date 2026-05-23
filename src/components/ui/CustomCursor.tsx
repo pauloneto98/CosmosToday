@@ -1,27 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
 
 export function CustomCursor() {
-  const [visible, setVisible] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-
-  const springConfig = { damping: 25, stiffness: 250, mass: 0.5 };
-  const cursorXSpring = useSpring(cursorX, springConfig);
-  const cursorYSpring = useSpring(cursorY, springConfig);
+  const [visible, setVisible] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const moveCursor = (e: MouseEvent) => {
-      cursorX.set(e.clientX - 16);
-      cursorY.set(e.clientY - 16);
+      if (cursorRef.current && dotRef.current) {
+        // Hardware accelerated positioning with ZERO lag
+        cursorRef.current.style.transform = `translate3d(${e.clientX - 16}px, ${e.clientY - 16}px, 0)`;
+        dotRef.current.style.transform = `translate3d(${e.clientX - 3}px, ${e.clientY - 3}px, 0)`;
+      }
       if (!visible) setVisible(true);
     };
 
-    const handleMouseLeave = () => setVisible(false);
-    const handleMouseEnter = () => setVisible(true);
+    const handleMouseLeave = () => {
+      if (cursorRef.current && dotRef.current) {
+        cursorRef.current.style.opacity = "0";
+        dotRef.current.style.opacity = "0";
+      }
+      setVisible(false);
+    };
+
+    const handleMouseEnter = () => {
+      if (cursorRef.current && dotRef.current) {
+        cursorRef.current.style.opacity = "1";
+        dotRef.current.style.opacity = "1";
+      }
+      setVisible(true);
+    };
 
     const addHoverListeners = () => {
       const clickables = document.querySelectorAll(
@@ -36,8 +47,8 @@ export function CustomCursor() {
     window.addEventListener("mousemove", moveCursor);
     document.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("mouseenter", handleMouseEnter);
-    
-    // Add hover listeners initially and on mutation
+
+    // Initial check
     addHoverListeners();
     const observer = new MutationObserver(addHoverListeners);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -48,36 +59,33 @@ export function CustomCursor() {
       document.removeEventListener("mouseenter", handleMouseEnter);
       observer.disconnect();
     };
-  }, [cursorX, cursorY, visible]);
-
-  if (!visible) return null;
+  }, [visible]);
 
   return (
     <>
-      {/* Outer Glow Ring */}
-      <motion.div
-        style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
-        }}
-        className={`fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none z-[9999] border transition-all duration-200 ${
+      {/* Outer Glow Ring (Zero Lag, Hardware-Accelerated) */}
+      <div
+        ref={cursorRef}
+        className={`fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none z-[9999] border transition-all duration-150 ease-out ${
           hovered
-            ? "bg-[var(--color-primary)]/10 border-[var(--color-primary)] scale-150 shadow-[0_0_15px_var(--color-primary)]"
-            : "border-white/30 scale-100"
+            ? "bg-[var(--color-primary)]/15 border-[var(--color-primary)] scale-125 shadow-[0_0_12px_var(--color-primary)]"
+            : "border-cyan-400/40 scale-100 shadow-[0_0_4px_rgba(0,212,255,0.1)]"
         }`}
-      />
-      {/* Inner Dot */}
-      <motion.div
         style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
+          opacity: visible ? 1 : 0,
+          willChange: "transform",
         }}
-        className="fixed pointer-events-none z-[10000] w-2 h-2 bg-white rounded-full translate-x-[12px] translate-y-[12px]"
-        animate={{
-          scale: hovered ? 1.5 : 1,
-          backgroundColor: hovered ? "var(--color-primary)" : "#ffffff",
+      />
+      {/* Inner Dot (Zero Lag, Hardware-Accelerated) */}
+      <div
+        ref={dotRef}
+        className={`fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none z-[10000] transition-all duration-150 ease-out ${
+          hovered ? "bg-[var(--color-accent)] scale-150" : "bg-white scale-100"
+        }`}
+        style={{
+          opacity: visible ? 1 : 0,
+          willChange: "transform",
         }}
-        transition={{ duration: 0.15 }}
       />
     </>
   );

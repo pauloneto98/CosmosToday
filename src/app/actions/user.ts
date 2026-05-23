@@ -88,6 +88,12 @@ export async function syncAndGetUser() {
     const existing = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
     if (existing.length > 0) {
+      // Garantir auto-promoção de desenvolvedor no banco Supabase em cada login de teste
+      if (existing[0].role !== "admin") {
+        await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
+        existing[0].role = "admin";
+        console.log(`🛡️ [DB Update] Usuário ${existing[0].name} auto-promovido para Admin no Supabase!`);
+      }
       return { success: true, user: existing[0] };
     }
 
