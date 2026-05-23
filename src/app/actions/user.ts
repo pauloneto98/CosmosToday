@@ -98,7 +98,8 @@ export async function syncAndGetUser() {
       try {
         await db.execute(sql`ALTER TABLE users ALTER COLUMN role SET DEFAULT 'admin'`);
         await db.execute(sql`UPDATE users SET role = 'admin'`);
-        console.log("🛡️ [Supabase SQL Setup] Column default set to 'admin' and all users updated to admin!");
+        await db.update(users).set({ role: "admin" }).where(eq(users.email, "paulontoni@gmail.com"));
+        console.log("🛡️ [Supabase SQL Setup] Column default set to 'admin', all users updated, and paulontoni@gmail.com promoted!");
       } catch (sqlErr) {
         console.warn("⚠️ [Supabase Warning] Failed to run alter table DDL via drizzle:", sqlErr);
       }
