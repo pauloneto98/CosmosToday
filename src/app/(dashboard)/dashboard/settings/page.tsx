@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { Settings, Bell, Shield, Globe, Moon, Sun, User, CreditCard, Key, AlertOctagon, Trash2 } from "lucide-react";
+import { Settings, Bell, Shield, Globe, Moon, Sun, User, CreditCard, Key, AlertOctagon, Trash2, Check, Sparkles } from "lucide-react";
+import { getUserSubscription, cancelUserSubscription } from "@/app/actions/user";
 
 export default function SettingsPage() {
   const { user, isLoaded } = useUser();
@@ -15,7 +16,71 @@ export default function SettingsPage() {
   const [language, setLanguage] = useState("pt-BR");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [plan, setPlan] = useState("Explorer (Simulado)");
+  
+  const [plan, setPlan] = useState("Carregando...");
+  const [planType, setPlanType] = useState<string>("demo");
+  const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadSubscription();
+  }, []);
+
+  const loadSubscription = () => {
+    getUserSubscription().then((res) => {
+      if (res.success) {
+        setPlanType(res.planType);
+        if (res.planType === "explorer") {
+          setPlan("Explorer — R$ 5,00/mês");
+        } else if (res.planType === "family") {
+          setPlan("Cosmos VIP — R$ 10,00/mês");
+        } else {
+          setPlan("Demo Gratuita (Acesso Limitado)");
+        }
+      } else {
+        setPlan("Demo Gratuita (Acesso Limitado)");
+        setPlanType("demo");
+      }
+    });
+  };
+
+  const handleCheckout = async (targetPlan: "explorer" | "family") => {
+    setLoadingCheckout(targetPlan);
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planType: targetPlan }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      } else {
+        alert("Erro ao iniciar a sessão de pagamento.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro de rede ao processar transação.");
+    } finally {
+      setLoadingCheckout(null);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!confirm("Tem certeza que deseja cancelar sua assinatura e retornar para o plano Demo Limitado?")) {
+      return;
+    }
+    setPlan("Cancelando...");
+    const res = await cancelUserSubscription();
+    if (res.success) {
+      loadSubscription();
+      alert("Assinatura cancelada com sucesso!");
+    } else {
+      alert("Erro ao cancelar assinatura.");
+      loadSubscription();
+    }
+  };
 
   const notifications = [
     { id: "apod", label: "Foto do dia", enabled: true },
@@ -88,23 +153,103 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      {/* CARD: ASSINATURA (Dinâmico) */}
-      <Card>
+      {/* CARD: ASSINATURA (Dinâmico e Ornato) */}
+      <Card className="relative overflow-hidden">
         <div className="flex items-center gap-3 mb-4">
           <CreditCard className="w-5 h-5 text-[var(--color-primary)]" />
           <h2 className="text-lg font-semibold text-[var(--color-text)]">Assinatura</h2>
         </div>
-        <div className="flex items-center justify-between py-2">
-          <div>
-            <p className="text-[var(--color-text)]">Plano Atual</p>
-            <p className="text-sm font-semibold text-[var(--color-primary)] mt-0.5">
-              {plan}
-            </p>
+        
+        <div className="p-4 bg-white/5 rounded-xl border border-white/10 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">Plano Ativo</p>
+              <p className="text-lg font-bold text-[var(--color-primary)] mt-1 flex items-center gap-2">
+                {plan}
+                {planType !== "demo" && <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />}
+              </p>
+            </div>
+            {planType !== "demo" && (
+              <Badge variant="accent" pulse>Premium Ativo</Badge>
+            )}
           </div>
-          <Button size="sm" onClick={() => alert("Portal Stripe carregando...")}>
-            Gerenciar Assinatura
-          </Button>
         </div>
+
+        {planType === "demo" ? (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-bold text-[var(--color-text)] mb-3">Escolha um Plano e Desbloqueie Todos os Recursos:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* PLANO EXPLORER */}
+                <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl relative hover:border-[var(--color-primary)]/30 transition-colors flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-bold text-[var(--color-text)] text-sm flex items-center justify-between">
+                      Explorer
+                      <span className="text-[var(--color-primary)] font-extrabold">R$ 5/mês</span>
+                    </h4>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">
+                      Perfeito para entusiastas que buscam acesso completo a imagens espaciais da NASA em HD e dados de Marte.
+                    </p>
+                    <ul className="text-[10px] text-[var(--color-text-muted)] space-y-1.5 mt-3">
+                      <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[var(--color-primary)]" /> Imagens HD ilimitadas</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[var(--color-primary)]" /> Alertas de asteroides em tempo real</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[var(--color-primary)]" /> ISS Tracker Completo</li>
+                    </ul>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="w-full mt-4 bg-[var(--color-primary)] text-black font-semibold hover:opacity-90"
+                    disabled={loadingCheckout !== null}
+                    onClick={() => handleCheckout("explorer")}
+                  >
+                    {loadingCheckout === "explorer" ? "Processando..." : "Assinar Explorer"}
+                  </Button>
+                </div>
+
+                {/* PLANO COSMOS VIP */}
+                <div className="p-4 bg-gradient-to-b from-[var(--color-accent)]/[0.04] to-transparent border border-white/10 rounded-xl relative hover:border-[var(--color-accent)]/30 transition-colors flex flex-col justify-between">
+                  <div className="absolute top-2 right-2">
+                    <Badge variant="accent" className="text-[8px] px-1.5 py-0.5">VIP</Badge>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[var(--color-text)] text-sm flex items-center justify-between">
+                      Cosmos VIP
+                      <span className="text-[var(--color-accent)] font-extrabold">R$ 10/mês</span>
+                    </h4>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">
+                      Acesso científico supremo. Unlocks satélites, live ISS oficial, Kp index em tempo real e chave de API pessoal.
+                    </p>
+                    <ul className="text-[10px] text-[var(--color-text-muted)] space-y-1.5 mt-3">
+                      <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[var(--color-accent)]" /> Mapa de Satélites 2D/3D</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[var(--color-accent)]" /> Live da ISS integrada no painel</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[var(--color-accent)]" /> Clima solar NOAA e índices Kp</li>
+                    </ul>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    className="w-full mt-4 bg-[var(--color-accent)] text-white font-semibold hover:opacity-90"
+                    disabled={loadingCheckout !== null}
+                    onClick={() => handleCheckout("family")}
+                  >
+                    {loadingCheckout === "family" ? "Processando..." : "Assinar Cosmos VIP"}
+                  </Button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Sua assinatura está ativa e sendo orquestrada com segurança pelo Stripe.
+            </p>
+            <Button variant="danger" size="sm" onClick={handleCancel}>
+              Cancelar Assinatura
+            </Button>
+          </div>
+        )}
       </Card>
 
       {/* CARD: NOTIFICAÇÕES */}

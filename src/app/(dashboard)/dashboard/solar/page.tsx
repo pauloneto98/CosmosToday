@@ -16,12 +16,16 @@ import {
   Calendar,
   Search,
   Sparkles,
-  Info
+  Info,
+  Lock,
+  Crown
 } from "lucide-react";
 import { getSolarEvents, mockSolarEvents, getEventTypeLabel, getEventTypeColor, type SolarEvent } from "@/lib/nasa/donki";
-import { saveToFavorites } from "@/app/actions/user";
+import { saveToFavorites, getUserSubscription } from "@/app/actions/user";
+import Link from "next/link";
 
 export default function SolarPage() {
+  const [planType, setPlanType] = useState<string>("loading");
   const [events, setEvents] = useState<SolarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [useMock, setUseMock] = useState(false);
@@ -40,6 +44,13 @@ export default function SolarPage() {
   const [solarLevel, setSolarLevel] = useState<"calm" | "moderate" | "elevated" | "storm">("calm");
 
   useEffect(() => {
+    getUserSubscription().then((res) => {
+      if (res.success) {
+        setPlanType(res.planType);
+      } else {
+        setPlanType("demo");
+      }
+    });
     fetchSolarEventsList();
   }, []);
 
@@ -109,6 +120,63 @@ export default function SolarPage() {
   const flrCount = events.filter(e => e.type === "FLR").length;
   const cmeCount = events.filter(e => e.type === "CME").length;
   const gstCount = events.filter(e => e.type === "GST").length;
+
+  if (planType === "loading") {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-[var(--color-text-muted)] animate-pulse">Sincronizando satélites de clima espacial...</p>
+      </div>
+    );
+  }
+
+  if (planType === "demo") {
+    return (
+      <div className="h-[80vh] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full relative group"
+        >
+          {/* Neon Glow por trás do card */}
+          <div className="absolute -inset-1.5 bg-gradient-to-r from-amber-500 to-red-500 rounded-2xl blur-lg opacity-25 group-hover:opacity-40 transition-opacity" />
+          
+          <Card className="relative overflow-hidden p-8 border border-white/10 bg-[#0A0A1A]/95 backdrop-blur-xl text-center flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-6">
+              <Lock className="w-8 h-8 text-amber-400 animate-pulse" />
+            </div>
+
+            <Badge variant="warning" className="mb-4 uppercase tracking-widest text-[9px] px-2.5 py-0.5">Recurso Premium</Badge>
+            
+            <h2 className="text-2xl font-black font-[family-name:var(--font-display)] text-white mb-3">
+              Clima Solar em Tempo Real
+            </h2>
+            
+            <p className="text-sm text-[var(--color-text-muted)] leading-relaxed mb-6">
+              O monitoramento avançado de ventos solares, tempestades magnéticas severas (Kp) e boletins meteorológicos da NASA DONKI é um recurso exclusivo dos planos <strong>Explorer</strong> e <strong>Cosmos VIP</strong>.
+            </p>
+
+            <div className="p-4 bg-white/5 rounded-xl border border-white/5 w-full mb-6 text-left space-y-2">
+              <p className="text-xs text-[var(--color-text)] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span>Alertas reais de tempestades geomagnéticas</span>
+              </p>
+              <p className="text-xs text-[var(--color-text)] flex items-center gap-2">
+                <Crown className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <span>Telemetria de flares e ventos solares</span>
+              </p>
+            </div>
+
+            <Link href="/dashboard/settings" className="w-full">
+              <Button className="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold shadow-[0_0_15px_rgba(245,158,11,0.25)] py-3">
+                Desbloquear por R$ 5/mês
+              </Button>
+            </Link>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

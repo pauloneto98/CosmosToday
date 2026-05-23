@@ -2,7 +2,7 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db/client";
-import { users, favorites } from "@/lib/db/schema";
+import { users, favorites, subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 // Curated space photographs from May 2026 (NASA, SpaceX, ESA, CNSA)
@@ -182,4 +182,49 @@ export async function getFavorites() {
     return [];
   }
 }
+
+export async function getUserSubscription() {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, planType: "demo", status: "none" };
+    }
+
+    const userSub = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
+
+    if (userSub.length === 0) {
+      return { success: true, planType: "demo", status: "trialing" };
+    }
+
+    const sub = userSub[0];
+    
+    // Check if the subscription is still valid (not expired)
+    const isExpired = sub.currentPeriodEnd && new Date(sub.currentPeriodEnd) < new Date();
+    if (isExpired || sub.status === "canceled") {
+      return { success: true, planType: "demo", status: "expired" };
+    }
+
+    return { success: true, planType: sub.planType, status: sub.status };
+  } catch (error: any) {
+    console.error("❌ Erro ao obter assinatura:", error);
+    return { success: false, planType: "demo", status: "error", error: error.message };
+  }
+}
+
+export async function cancelUserSubscription() {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    await db.delete(subscriptions).where(eq(subscriptions.userId, userId));
+    return { success: true };
+  } catch (error: any) {
+    console.error("❌ Erro ao cancelar assinatura:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+
 

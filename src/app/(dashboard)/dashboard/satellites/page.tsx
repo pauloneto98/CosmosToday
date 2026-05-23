@@ -20,9 +20,14 @@ import {
   Info,
   MapPin,
   Compass,
-  History
+  History,
+  Lock,
+  Sparkles,
+  Crown
 } from "lucide-react";
 import type { NaturalEvent } from "@/app/api/nasa/eonet/route";
+import { getUserSubscription } from "@/app/actions/user";
+import Link from "next/link";
 
 declare global {
   interface Window {
@@ -31,6 +36,18 @@ declare global {
 }
 
 export default function SatellitesPage() {
+  const [planType, setPlanType] = useState<string>("loading");
+
+  useEffect(() => {
+    getUserSubscription().then((res) => {
+      if (res.success) {
+        setPlanType(res.planType);
+      } else {
+        setPlanType("demo");
+      }
+    });
+  }, []);
+
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersGroupRef = useRef<any>(null);
@@ -42,6 +59,63 @@ export default function SatellitesPage() {
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [showRadar, setShowRadar] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<NaturalEvent | null>(null);
+
+  if (planType === "loading") {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-[var(--color-text-muted)] animate-pulse">Sincronizando coordenadas orbitais...</p>
+      </div>
+    );
+  }
+
+  if (planType === "demo") {
+    return (
+      <div className="h-[80vh] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full relative group"
+        >
+          {/* Neon Glow por trás do card */}
+          <div className="absolute -inset-1.5 bg-gradient-to-r from-cyan-500 to-violet-500 rounded-2xl blur-lg opacity-25 group-hover:opacity-40 transition-opacity" />
+          
+          <Card className="relative overflow-hidden p-8 border border-white/10 bg-[#0A0A1A]/95 backdrop-blur-xl text-center flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-6">
+              <Lock className="w-8 h-8 text-cyan-400 animate-pulse" />
+            </div>
+
+            <Badge variant="accent" className="mb-4 uppercase tracking-widest text-[9px] px-2.5 py-0.5">Recurso Premium</Badge>
+            
+            <h2 className="text-2xl font-black font-[family-name:var(--font-display)] text-white mb-3">
+              Mapa de Satélites Completo
+            </h2>
+            
+            <p className="text-sm text-[var(--color-text-muted)] leading-relaxed mb-6">
+              O rastreamento orbital 2D/3D em tempo real e o mapa meteorológico de desastres naturais é um recurso exclusivo dos planos <strong>Explorer</strong> e <strong>Cosmos VIP</strong>.
+            </p>
+
+            <div className="p-4 bg-white/5 rounded-xl border border-white/5 w-full mb-6 text-left space-y-2">
+              <p className="text-xs text-[var(--color-text)] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                <span>Rastreie mais de 50 satélites ativos</span>
+              </p>
+              <p className="text-xs text-[var(--color-text)] flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span>Integração de Clima Espacial e NOAA</span>
+              </p>
+            </div>
+
+            <Link href="/dashboard/settings" className="w-full">
+              <Button className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold shadow-[0_0_15px_rgba(0,212,255,0.25)] py-3">
+                Desbloquear por R$ 5/mês
+              </Button>
+            </Link>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  };
   
   // Filtros ativos
   const [filterWildfires, setFilterWildfires] = useState(true);
