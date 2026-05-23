@@ -83,6 +83,14 @@ export async function syncAndGetUser() {
 
     const email = user.emailAddresses[0].emailAddress;
     const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+    const username = (user as any).username || "";
+
+    const isDevAccount = 
+      username.toLowerCase() === "pauloneto98" || 
+      email.toLowerCase().includes("pauloneto98") ||
+      email.toLowerCase() === "paulontoni@gmail.com" ||
+      name.toLowerCase().includes("pauloneto98") ||
+      name.toLowerCase().includes("pauloneto");
 
     // Objeto de fallback caso o banco dê erro de conexão (garante papel admin local)
     const fallbackUser = {
@@ -99,7 +107,10 @@ export async function syncAndGetUser() {
         await db.execute(sql`ALTER TABLE users ALTER COLUMN role SET DEFAULT 'admin'`);
         await db.execute(sql`UPDATE users SET role = 'admin'`);
         await db.update(users).set({ role: "admin" }).where(eq(users.email, "paulontoni@gmail.com"));
-        console.log("🛡️ [Supabase SQL Setup] Column default set to 'admin', all users updated, and paulontoni@gmail.com promoted!");
+        if (isDevAccount) {
+          await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
+        }
+        console.log("🛡️ [Supabase SQL Setup] Column default set to 'admin', all users updated, and pauloneto98 promoted!");
       } catch (sqlErr) {
         console.warn("⚠️ [Supabase Warning] Failed to run alter table DDL via drizzle:", sqlErr);
       }
@@ -108,7 +119,7 @@ export async function syncAndGetUser() {
 
       if (existing.length > 0) {
         // Garantir auto-promoção de desenvolvedor no banco Supabase em cada login de teste
-        if (existing[0].role !== "admin") {
+        if (existing[0].role !== "admin" || isDevAccount) {
           await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
           existing[0].role = "admin";
           console.log(`🛡️ [DB Update] Usuário ${existing[0].name} auto-promovido para Admin no Supabase!`);
@@ -116,9 +127,9 @@ export async function syncAndGetUser() {
         return { success: true, user: existing[0] };
       }
 
-      // Verificar se é o primeiro usuário para torná-lo Admin
+      // Verificar se é o primeiro usuário ou desenvolvedor para torná-lo Admin
       const allUsers = await db.select().from(users).limit(1);
-      const role = allUsers.length === 0 ? "admin" : "user";
+      const role = (allUsers.length === 0 || isDevAccount) ? "admin" : "user";
 
       const newUser = {
         id: userId,
