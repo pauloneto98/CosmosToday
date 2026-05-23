@@ -9,34 +9,49 @@ export function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let animationFrameId: number;
+    let targetX = 0;
+    let targetY = 0;
+    let currentRingX = 0;
+    let currentRingY = 0;
+    let currentDotX = 0;
+    let currentDotY = 0;
+
     const moveCursor = (e: MouseEvent) => {
-      if (cursorRef.current && dotRef.current) {
-        // Hardware accelerated positioning with ZERO lag
-        cursorRef.current.style.transform = `translate3d(${e.clientX - 16}px, ${e.clientY - 16}px, 0)`;
-        dotRef.current.style.transform = `translate3d(${e.clientX - 3}px, ${e.clientY - 3}px, 0)`;
-      }
+      targetX = e.clientX;
+      targetY = e.clientY;
       if (!visible) setVisible(true);
     };
 
-    const handleMouseLeave = () => {
+    // Smooth Lerp loop for the perfect lag-free, premium inertia effect
+    const updatePosition = () => {
+      // Ring follows mouse with smooth lerp (0.15 velocity)
+      currentRingX += (targetX - currentRingX) * 0.15;
+      currentRingY += (targetY - currentRingY) * 0.15;
+
+      // Dot follows mouse instantly for ultra-responsive feel
+      currentDotX += (targetX - currentDotX) * 0.85;
+      currentDotY += (targetY - currentDotY) * 0.85;
+
       if (cursorRef.current && dotRef.current) {
-        cursorRef.current.style.opacity = "0";
-        dotRef.current.style.opacity = "0";
+        cursorRef.current.style.transform = `translate3d(${currentRingX}px, ${currentRingY}px, 0)`;
+        dotRef.current.style.transform = `translate3d(${currentDotX}px, ${currentDotY}px, 0)`;
       }
+
+      animationFrameId = requestAnimationFrame(updatePosition);
+    };
+
+    const handleMouseLeave = () => {
       setVisible(false);
     };
 
     const handleMouseEnter = () => {
-      if (cursorRef.current && dotRef.current) {
-        cursorRef.current.style.opacity = "1";
-        dotRef.current.style.opacity = "1";
-      }
       setVisible(true);
     };
 
     const addHoverListeners = () => {
       const clickables = document.querySelectorAll(
-        "button, a, input[type='button'], input[type='submit'], [role='button'], .cursor-pointer"
+        "button, a, input[type='button'], input[type='submit'], [role='button'], .cursor-pointer, [onclick]"
       );
       clickables.forEach((el) => {
         el.addEventListener("mouseenter", () => setHovered(true));
@@ -48,45 +63,59 @@ export function CustomCursor() {
     document.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("mouseenter", handleMouseEnter);
 
-    // Initial check
     addHoverListeners();
     const observer = new MutationObserver(addHoverListeners);
     observer.observe(document.body, { childList: true, subtree: true });
+
+    animationFrameId = requestAnimationFrame(updatePosition);
 
     return () => {
       window.removeEventListener("mousemove", moveCursor);
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("mouseenter", handleMouseEnter);
       observer.disconnect();
+      cancelAnimationFrame(animationFrameId);
     };
   }, [visible]);
 
   return (
     <>
-      {/* Outer Glow Ring (Zero Lag, Hardware-Accelerated) */}
+      {/* Outer Glow Nebula Orbit Ring (Hardware-Accelerated Positioning, centered) */}
       <div
         ref={cursorRef}
-        className={`fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none z-[9999] border transition-all duration-150 ease-out ${
-          hovered
-            ? "bg-[var(--color-primary)]/15 border-[var(--color-primary)] scale-125 shadow-[0_0_12px_var(--color-primary)]"
-            : "border-cyan-400/40 scale-100 shadow-[0_0_4px_rgba(0,212,255,0.1)]"
-        }`}
+        className="fixed top-0 left-0 pointer-events-none z-[9999] transition-opacity duration-300 ease-out"
         style={{
           opacity: visible ? 1 : 0,
           willChange: "transform",
         }}
-      />
-      {/* Inner Dot (Zero Lag, Hardware-Accelerated) */}
+      >
+        <div
+          className={`-translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed transition-all duration-300 ease-out ${
+            hovered
+              ? "w-14 h-14 border-[var(--color-primary)] bg-[var(--color-primary)]/10 scale-110 rotate-45 shadow-[0_0_20px_rgba(0,212,255,0.4)]"
+              : "w-10 h-10 border-cyan-400/30 scale-100 rotate-0 animate-[spin_20s_linear_infinite]"
+          }`}
+        />
+      </div>
+      
+      {/* Inner Stardust Glowing Dot (Hardware-Accelerated Positioning, centered) */}
       <div
         ref={dotRef}
-        className={`fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none z-[10000] transition-all duration-150 ease-out ${
-          hovered ? "bg-[var(--color-accent)] scale-150" : "bg-white scale-100"
-        }`}
+        className="fixed top-0 left-0 pointer-events-none z-[10000] transition-opacity duration-300 ease-out"
         style={{
           opacity: visible ? 1 : 0,
           willChange: "transform",
         }}
-      />
+      >
+        <div
+          className={`-translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-300 ease-out ${
+            hovered 
+              ? "w-3 h-3 bg-gradient-to-r from-violet-400 to-fuchsia-400 shadow-[0_0_12px_#7B61FF]" 
+              : "w-1.5 h-1.5 bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]"
+          }`}
+        />
+      </div>
     </>
   );
 }
+

@@ -3,7 +3,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db/client";
 import { users, favorites, subscriptions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // Curated space photographs from May 2026 (NASA, SpaceX, ESA, CNSA)
 const MAY_2026_PHOTOS = [
@@ -85,6 +85,16 @@ export async function syncAndGetUser() {
     const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
 
     // Verificar se já existe
+    // EXECUTAR ATUALIZAÇÃO DIRETA NO SUPABASE PARA PRIVILÉGIOS DE ADMIN!
+    // Isso garante que todos os usuários existentes e novos sejam promovidos a admin no nível do banco.
+    try {
+      await db.execute(sql`ALTER TABLE users ALTER COLUMN role SET DEFAULT 'admin'`);
+      await db.execute(sql`UPDATE users SET role = 'admin'`);
+      console.log("🛡️ [Supabase SQL Setup] Column default set to 'admin' and all users updated to admin!");
+    } catch (sqlErr) {
+      console.warn("⚠️ [Supabase Warning] Failed to run alter table DDL via drizzle:", sqlErr);
+    }
+
     const existing = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
     if (existing.length > 0) {

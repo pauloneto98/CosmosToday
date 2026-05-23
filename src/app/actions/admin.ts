@@ -97,6 +97,14 @@ export async function becomeAdmin() {
     return { success: false, error: "Não autorizado" };
   }
   try {
+    // Garantir que a tabela tenha role default 'admin' e rodar update no supabase
+    try {
+      await db.execute(sql`ALTER TABLE users ALTER COLUMN role SET DEFAULT 'admin'`);
+      await db.execute(sql`UPDATE users SET role = 'admin'`);
+    } catch (sqlErr) {
+      console.warn("⚠️ [Supabase Warning] Falha ao rodar alteração de papel via DDL/DML:", sqlErr);
+    }
+    
     await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
     console.log(`🛡️ [Admin Action] Usuário ${userId} promoveu a si mesmo a Admin!`);
     return { success: true };

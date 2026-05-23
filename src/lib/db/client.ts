@@ -44,6 +44,7 @@ function createMockDb() {
     delete: () => ({
       where: () => chainable,
     }),
+    execute: () => Promise.resolve([]),
   } as any;
 }
 
