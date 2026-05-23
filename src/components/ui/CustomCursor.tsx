@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 
 export function CustomCursor() {
@@ -57,8 +57,8 @@ export function CustomCursor() {
       {/* Outer Glow Ring */}
       <motion.div
         style={{
-          translateX: cursorXSpring,
-          translateY: cursorYSpring,
+          x: cursorXSpring,
+          y: cursorYSpring,
         }}
         className={`fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none z-[9999] border transition-all duration-200 ${
           hovered
@@ -69,10 +69,8 @@ export function CustomCursor() {
       {/* Inner Dot */}
       <motion.div
         style={{
-          x: useSpring(useMotionValue(0), springConfig),
-          y: useSpring(useMotionValue(0), springConfig),
-          left: cursorXSpring,
-          top: cursorYSpring,
+          x: cursorXSpring,
+          y: cursorYSpring,
         }}
         className="fixed pointer-events-none z-[10000] w-2 h-2 bg-white rounded-full translate-x-[12px] translate-y-[12px]"
         animate={{
