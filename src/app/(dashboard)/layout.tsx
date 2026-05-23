@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { useAppStore } from "@/store/app-store";
 import { motion } from "framer-motion";
 import { syncAndGetUser } from "@/app/actions/user";
+import { CustomCursor } from "@/components/ui/CustomCursor";
 
 export default function DashboardLayout({
   children,
@@ -24,7 +25,8 @@ export default function DashboardLayout({
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="min-h-screen bg-[var(--color-bg)] relative cursor-none">
+      <CustomCursor />
       <Sidebar />
       <Header />
       <motion.main

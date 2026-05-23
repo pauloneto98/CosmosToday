@@ -14,7 +14,8 @@ import {
   Settings,
   Shield,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Globe
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,6 +23,7 @@ import { syncAndGetUser } from "@/app/actions/user";
 
 const navItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard" },
+  { icon: Globe, label: "Explorar Marte", href: "/dashboard/mars" },
   { icon: Image, label: "Galeria", href: "/dashboard/gallery" },
   { icon: Map, label: "Mapa", href: "/dashboard/map" },
   { icon: Satellite, label: "Satélites", href: "/dashboard/satellites" },

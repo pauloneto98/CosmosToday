@@ -175,6 +175,11 @@ html {
 }
 
 /* Custom cursor */
+.cursor-none,
+.cursor-none * {
+  cursor: none !important;
+}
+
 .custom-cursor {
   position: fixed;
   width: 8px;
